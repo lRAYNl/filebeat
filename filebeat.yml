@@ -1,0 +1,17 @@
+filebeat.inputs:
+
+- type: filestream
+  id: my-system-logs
+  enabled: true
+  paths:
+    - /var/log/syslog
+    - /var/log/auth.log
+  tags: ["syslog"]
+
+output.logstash:
+  hosts: ["IP:5044"] #Если нужно отправлять на несколько IP, то через запятую в кавычки пишутся другие IP
+  loadbalance: true
+
+  ssl.enabled: true
+  ssl.certificate_authorities: ["/etc/filebeat/certs/logstash.crt"]
+  ssl.verification_mode: none
