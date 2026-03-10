@@ -18,7 +18,7 @@ https://github.com/lRAYNl/elk-cluster
 
   rm /etc/filebeat/filebeat.yml
 
-  mv elk-cluster/filebeat.yml
+  mv filebeat/filebeat.yml
 
 - Меняем данные на нужные
 
@@ -26,6 +26,8 @@ https://github.com/lRAYNl/elk-cluster
 
 - Создаем папку с сертификатами
 
-  sudo mkdir /etc/filebeat/certs #Затем перекидываем logstash.crt
+  sudo mkdir /etc/filebeat/certs
+
+- Затем перекидываем logstash.crt
 
   cp ~/elk-cluster/certs/logstash.crt /etc/filebeat/certs
