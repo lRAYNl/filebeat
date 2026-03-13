@@ -4,9 +4,8 @@ filebeat.inputs:
   id: my-system-logs
   enabled: true
   paths:
-    - /var/log/syslog
-    - /var/log/auth.log
-  tags: ["syslog"]
+    - /var/log/**/*.log
+  tags: ["varlog"]
   
 - type: filestream
   id: my-docker-logs
