@@ -1,5 +1,5 @@
 Прежде чем работать с filebeat, нужно установить и настроить ELK, это можно сделать по этому репозиторию:
-https://github.com/lRAYNl/elk-cluster
+https://github.com/lRAYNl/elk
 -
 - Для работы ELK-стека, нужно установить агента сборщика (если будете использовать не filebeat, то пропускаем). Первое, пробрасываем ключ (бывают случаи, что нет доступа к этим директориям, поэтому, можно использовать зеркала, которые есть в свободном доступе, для скачивания пакета)
 
@@ -28,6 +28,6 @@ https://github.com/lRAYNl/elk-cluster
 
   sudo mkdir /etc/filebeat/certs
 
-- Затем перекидываем logstash.crt
+- Затем перекидываем logstash.crt (если используем без kafka)
 
   cp ~/elk-cluster/certs/logstash.crt /etc/filebeat/certs
