@@ -17,14 +17,19 @@ filebeat.inputs:
         stream: all
   tags: ["docker"]
 
-#output.kafka:
-#  hosts: ["IP_1:9092","IP_2:9092","IP_3:9092"]
-#  topic: "kafka-logs"
-  
-output.logstash:
-  hosts: ["IP:5044"] #Если нужно отправлять на несколько IP, то через запятую в кавычки пишутся другие IP
-  loadbalance: true
+output.kafka:
+  hosts: ["IP:9092"]
+  topic: "kafka-logs"
 
-  ssl.enabled: true
-  ssl.certificate_authorities: ["/etc/filebeat/certs/logstash.crt"]
-  ssl.verification_mode: none
+  ssl:
+    enabled: true
+    certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+    verification_mode: none
+  
+#output.logstash:
+#  hosts: ["IP:5044"] #Если нужно отправлять на несколько IP, то через запятую в кавычки пишутся другие IP
+#  loadbalance: true
+#
+#  ssl.enabled: true
+#  ssl.certificate_authorities: ["/etc/filebeat/certs/logstash.crt"]
+#  ssl.verification_mode: none
