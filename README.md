@@ -70,22 +70,19 @@ Filebeat нужен только **`ca.crt` от Kafka-кластера** (не 
 
 ### 2.1 Раздать ca.crt с kafka-node-01
 
-**На kafka-node-01** — запустить HTTP-сервер:
+**На kafka-node-01** — скопировать сгенерированный сертификат и отправить любым способом на внешние узлы (можно скопировать текст и вставить):
 
 ```bash
 cd ~/kafka/certs
-python3 -m http.server 8888
+nano ca.crt
 ```
 
-**На хосте с Filebeat** — скачать и установить:
+**На хосте с Filebeat** — вставить сертификат:
 
 ```bash
 sudo mkdir -p /etc/filebeat/certs
 
-sudo wget http://<IP_KAFKA_NODE_01>:8888/ca.crt \
-  -O /etc/filebeat/certs/ca.crt
-
-sudo chmod 644 /etc/filebeat/certs/ca.crt
+sudo nano /etc/filebeat/certs/ca.crt
 ```
 
 Остановить сервер на kafka-node-01 (`Ctrl+C`).
