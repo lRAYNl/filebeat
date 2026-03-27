@@ -189,6 +189,9 @@ sudo systemctl stop filebeat
 
 # Ручной тест с подробным выводом
 sudo filebeat -e -c /etc/filebeat/filebeat.yml -d "kafka"
+
+# Проверка доступности к брокерам
+sudo filebeat test output
 ```
 
 ---
