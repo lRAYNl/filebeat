@@ -2,6 +2,10 @@
 
 Сбор системных логов и логов Docker-контейнеров с отправкой в Kafka по SSL.
 
+```
+git clone https://github.com/lRAYNl/filebeat.git ~/filebeat
+```
+
 ---
 
 ## Содержание
@@ -9,7 +13,7 @@
 - [Описание](#описание)
 - [Требования](#требования)
 - [Шаг 1 — Установка Filebeat](#шаг-1--установка-filebeat)
-- [Шаг 2 — Установка сертификатов](#шаг-2--установка-сертификатов)
+- [Шаг 2 — Получение и установка сертификатов](#шаг-2--получение-и-установка-сертификатов)
 - [Шаг 3 — Настройка конфигурации](#шаг-3--настройка-конфигурации)
 - [Шаг 4 — Запуск и проверка](#шаг-4--запуск-и-проверка)
 - [Структура конфига](#структура-конфига)
@@ -21,10 +25,10 @@
 ## Описание
 
 Filebeat читает:
-- `/var/log/syslog` и `/var/log/auth.log` (системные логи)
-- `/var/lib/docker/containers/*/*.log` (логи всех Docker-контейнеров)
+- `/var/log/syslog` и `/var/log/auth.log` — системные логи
+- `/var/lib/docker/containers/*/*.log` — логи всех Docker-контейнеров
 
-и отправляет события в топик `kafka-logs` Kafka-кластера по SSL (порт 9092).
+И отправляет события в топик `kafka-logs` Kafka-кластера по SSL (порт **9092**).
 
 ---
 
@@ -33,7 +37,7 @@ Filebeat читает:
 - Ubuntu 22.04 / Debian 12
 - Filebeat 9.x
 - Доступность Kafka-брокеров по порту `9092`
-- Сертификаты: `ca.crt` и `logstash.crt` (получить у администратора ELK-кластера)
+- Сертификаты: `ca.crt` (Kafka CA) — получить у администратора Kafka-кластера
 
 ---
 
@@ -59,32 +63,38 @@ filebeat version
 
 ---
 
-## Шаг 2 — Установка сертификатов
+## Шаг 2 — Получение и установка сертификатов
 
-Сертификаты предоставляются администратором ELK-кластера (генерируются на `elk-node-01`).
+Filebeat нужен только **`ca.crt` от Kafka-кластера** (не от ELK).  
+Сертификат предоставляется с **kafka-node-01**.
+
+### 2.1 Раздать ca.crt с kafka-node-01
+
+**На kafka-node-01** — запустить HTTP-сервер:
 
 ```bash
-# Создать директорию
+cd ~/kafka/certs
+python3 -m http.server 8888
+```
+
+**На хосте с Filebeat** — скачать и установить:
+
+```bash
 sudo mkdir -p /etc/filebeat/certs
 
-# Скопировать сертификаты (выполнить на elk-node-01 или передать вручную)
-# scp user@elk-node-01:~/elk/certs/ca.crt      /tmp/
-# scp user@elk-node-01:~/elk/certs/logstash.crt /tmp/
+sudo wget http://<IP_KAFKA_NODE_01>:8888/ca.crt \
+  -O /etc/filebeat/certs/ca.crt
 
-# Поместить в нужную директорию
-sudo mv /tmp/ca.crt /tmp/logstash.crt /etc/filebeat/certs/
-
-# Установить права доступа
 sudo chmod 644 /etc/filebeat/certs/ca.crt
-sudo chmod 644 /etc/filebeat/certs/logstash.crt
 ```
+
+Остановить сервер на kafka-node-01 (`Ctrl+C`).
 
 Итоговая структура:
 
 ```
 /etc/filebeat/certs/
-├── ca.crt        # корневой CA (для проверки сертификата Kafka-брокера)
-└── logstash.crt  # сертификат Logstash (для справки, не используется напрямую)
+└── ca.crt    # корневой CA Kafka (для проверки сертификата брокера)
 ```
 
 ---
@@ -99,7 +109,7 @@ sudo cp ~/filebeat/filebeat.yml /etc/filebeat/filebeat.yml
 sudo nano /etc/filebeat/filebeat.yml
 ```
 
-В секции `output.kafka` заменить `hosts` на актуальные IP-адреса Kafka-брокеров:
+В секции `output.kafka` указать актуальные IP-адреса Kafka-брокеров:
 
 ```yaml
 output.kafka:
@@ -180,7 +190,7 @@ sudo systemctl restart filebeat
 # Остановка
 sudo systemctl stop filebeat
 
-# Ручной тест отправки (verbose режим)
+# Ручной тест с подробным выводом
 sudo filebeat -e -c /etc/filebeat/filebeat.yml -d "kafka"
 ```
 
@@ -190,8 +200,8 @@ sudo filebeat -e -c /etc/filebeat/filebeat.yml -d "kafka"
 
 | Симптом | Причина | Решение |
 |---------|---------|---------|
-| `SSL handshake failed` | Неверный `ca.crt` или путь к нему | Проверить `/etc/filebeat/certs/ca.crt` и путь в конфиге |
-| `connection refused` на порту 9092 | Kafka недоступна | Проверить IP-адреса в `hosts`, доступность порта |
-| `permission denied` на `/var/lib/docker` | Filebeat запущен без прав | Добавить пользователя в группу `docker` или запустить от `root` |
-| Нет данных в ES-индексе `filebeat-*` | Логи не поступают в Kafka | Проверить `filebeat test output`, логи Kafka и Logstash |
-| `open /var/log/syslog: no such file` | На системе нет syslog | Убрать путь из конфига или установить `rsyslog` |
+| `SSL handshake failed` | Неверный `ca.crt` (взят от ELK, а не от Kafka) | Использовать `ca.crt` с **kafka-node-01**, не с elk-node-01 |
+| `connection refused` на порту 9092 | Kafka недоступна или порт закрыт | Проверить IP-адреса в `hosts`, доступность порта 9092 |
+| `permission denied` на `/var/lib/docker` | Нет прав на чтение docker-логов | `sudo usermod -aG docker filebeat` или запустить от root |
+| Нет данных в ES-индексе `filebeat-*` | Логи не поступают в Kafka | Проверить `filebeat test output`, логи Logstash |
+| `open /var/log/syslog: no such file` | На системе нет syslog | Убрать путь из конфига или `sudo apt install rsyslog` |
